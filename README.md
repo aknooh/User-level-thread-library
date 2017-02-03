@@ -1,3 +1,5 @@
+This README was provided by the professor, and I'll rewirte it Once we finish.
+
 % ECS 150: Project #2 - User-level thread library
 %
 % UC Davis, Winter Quarter 2017
