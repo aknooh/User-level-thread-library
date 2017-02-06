@@ -1,3 +1,5 @@
+all: libuthread.a
+
 queue: test-queue.o queue.o
 	gcc test-queue.o queue.o -o queue
 
