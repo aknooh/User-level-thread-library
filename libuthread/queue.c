@@ -168,8 +168,8 @@ int queue_iterate(queue_t queue, queue_func_t func)
 		// through the elements.
 		iter_cp = iter->next;
 
-		//func(iter->data);  <-- dont call func for now
-		//iter = NULL;
+		func(iter->data);
+		iter = NULL;
 
 		iter = iter_cp;
 	}

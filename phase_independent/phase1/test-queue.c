@@ -1,5 +1,5 @@
 /*
- * Complete test for queue.h
+ * Exhaustive test for queue.h
  *
  */
 
@@ -8,6 +8,16 @@
 #include <assert.h>
 #include "queue.h"
 
+// global access
+queue_t queue;
+
+// test queue iterate
+void test(void *data)
+{
+	int *my_int = (int*)data;
+	if(*my_int == 35)
+		queue_delete(queue, data);
+}
 
 void test_all()
 {	
@@ -17,14 +27,16 @@ void test_all()
 	int * data3 = (int*) malloc(sizeof(int));
 	int * data4 = (int*) malloc(sizeof(int));
 	int * data5 = (int*) malloc(sizeof(int));
+	int * data6 = (int*) malloc(sizeof(int));
 
 	*data1 = 10;
 	*data2 = 20;
-	*data3 = 30;
+	*data3 = 35;
 	*data4 = 40;
 	*data5 = 50;
+	*data6 = 60;
 
-	queue_t queue = queue_create();
+	queue = queue_create();
 	
 	// enqueue
 	queue_enqueue(queue, data1); queue_iterate_db(queue); // 10
@@ -32,6 +44,14 @@ void test_all()
 	queue_enqueue(queue, data3); queue_iterate_db(queue); // ...
 	queue_enqueue(queue, data4); queue_iterate_db(queue);
 	queue_enqueue(queue, data5); queue_iterate_db(queue);
+	queue_enqueue(queue, data6); queue_iterate_db(queue);
+
+	// length
+	assert(queue_length(queue) == 6);
+
+	// queue iterate
+	queue_iterate(queue, test); queue_iterate_db(queue);
+	assert(queue_length(queue) == 5);
 
 	// delete
 	assert(queue_length(queue) == 5);
