@@ -1,6 +1,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 
+#include <stdio.h>
 #include "queue.h"
 
 typedef int bool;
@@ -9,86 +10,112 @@ typedef int bool;
 
 
 struct node {
-	node *prev, *next;
+	struct node *prev, *next;
 	void *data;
 } typedef node;
 
 struct queue {
-	node *tail, *front;
+	node *back, *front;
 	int size;
 };
-
-void *queue_top(queue_t queue)
-{
-	if (queue_empty(queue)) return NULL;
-	else return queue->front->data;
-}
 
 bool queue_empty(queue_t queue)
 {
 	return queue_length(queue) == 0;
 }
 
+void queue_pop(queue_t queue)
+{
+	if (queue_empty(queue)
+		|| queue == NULL) return;
+
+	node *temp_rm;
+	temp_rm = queue->front;
+	queue->front = queue->front->next;
+	
+	if (queue->front) 
+		queue->front->prev = NULL;
+	// otherwise empty
+	else queue->back = NULL;
+
+	queue->size--;
+	free(temp_rm);
+}
+
+void *queue_front(queue_t queue)
+{
+	if (queue_empty(queue)
+		|| queue == NULL) return NULL;
+	else return queue->front->data;
+}
+
 queue_t queue_create(void)
 {
-	queue_t q = malloc(sizeof(q));
+	queue_t q = malloc(sizeof(struct queue));
+	q->back = q->front = NULL;
 	q->size = 0;
-	q->tail = q->front = NULL;
 }
 
 int queue_destroy(queue_t queue)
 {
+	if (queue == NULL) return -1;
 	while(!queue_empty(queue)) {
-		free(queue_top(queue));
-		queue_dequeue(queue);
+		free(queue_front(queue));
+		queue_pop(queue);
 	}
-	return 1;
+	return 0;
 }
 
 int queue_enqueue(queue_t queue, void *data)
 {
 	// invalid data or queue
 	if ( data == NULL 
-	     || queue == NULL) return 0;
+	     || queue == NULL) return -1;
 
 	// create new node, and assign data
 	node *newNode = malloc(sizeof(node));
 	newNode->data = data;
 
-	// if empty: assign head and tail to single element
+	// if empty: assign front and back to single element
 	if (queue_empty(queue)) {
-		queue->tail = queue->front = newNode;
+		queue->back = queue->front = newNode;
 		newNode->next = newNode->prev = NULL;
 	}
 
 	// otherwise empty: assign to the back
 	else {
-		queue->tail->prev = newNode;
-		newNode->prev = queue->tail;
-		tail = newNode;
-		tail->next = NULL;
+		queue->back->next = newNode;
+		newNode->prev = queue->back;
+		queue->back = newNode;
+		newNode->next = NULL;
 	} 
 
 	// success
 	queue->size++;
-	return 1;
+	return 0;
 }
+
 
 int queue_dequeue(queue_t queue, void **data)
 {
-	if (queue_empty(queue)) return 0;
+	if (queue_empty(queue)
+		|| queue == NULL) return -1;
 
 	node *temp_rm;
-	temp_rm = queue->head;
-	queue->head = queue->head->next;
+	temp_rm = queue->front;
+	queue->front = queue->front->next;
 	
-	if (queue->head) 
-		queue->prev = NULL;
+	if (queue->front) 
+		queue->front->prev = NULL;
 	// otherwise empty
-	else queue->tail = NULL;
+	else queue->back = NULL;
 
-	free(temp_rm);
 	queue->size--;
+	free(temp_rm);
+
+	*data = queue->front->data;
+
+	return 0;
 }
 
 int queue_delete(queue_t queue, void *data)
@@ -100,11 +127,12 @@ int queue_delete(queue_t queue, void *data)
 
 	// queue as single element
 	if (iter->next == NULL 
-	    && iter->data == data)
+		&& iter->data == data)
 	{
-		queue->tail = queue->head = NULL;
+		queue->back = queue->front = NULL;
+		queue->size--;
 		free(iter);
-		return 1;
+		return 0;
 	}
 
 	// iterate to find element
@@ -115,27 +143,57 @@ int queue_delete(queue_t queue, void *data)
 
 			node *temp_rm = iter;
 			iter->prev->next = temp_rm->next;
-			node->next->prev = temp_rm->prev;
+			iter->next->prev = temp_rm->prev;
 
-			free(found);
+			free(temp_rm);
 			break;
 		}
 		iter = iter->next;
 	}
-
-	found ? return 1 : return 0;
+	queue->size--;
+	return found ? 0 : -1;
 }
 
 int queue_iterate(queue_t queue, queue_func_t func)
 {
-	/* TODO Phase 1 */
+	if(queue == NULL 
+	  || func == NULL) return -1;
+	
+	node *iter = queue->front;
+	node *iter_cp = NULL;
+	while (iter != NULL) 
+	{
+		// save position, so that if even if it deletes,
+		// we would still be able to continue iterating
+		// through the elements.
+		iter_cp = iter->next;
+
+		//func(iter->data);  <-- dont call func for now
+		//iter = NULL;
+
+		iter = iter_cp;
+	}
+	
+	return 0;
 }
 
 
 int queue_length(queue_t queue)
 {
+	if (queue == NULL) return -1;
 	return queue->size;
 }
 
-
+void queue_iterate_db(queue_t queue)
+{
+	if(queue == NULL) return;
+	
+	node *iter = queue->front;
+	while (iter != NULL) 
+	{
+		printf("%d, ", *((int*)iter->data));
+		iter = iter->next;
+	}
+	printf("\n");
+}
 
