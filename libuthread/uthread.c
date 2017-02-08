@@ -161,7 +161,12 @@ void uthread_block(void)
 void uthread_unblock(struct uthread_tcb *uthread)
 {
 	/* TODO Phase 2 */
-
+	int count;
+	for(count= 0; count < indexb; count++){
+		if(blocked[count].id == uthread->id){
+			blocked[count].state = READY;
+		}
+	}
 
 }
 
