@@ -17,14 +17,14 @@ queue_t queue;
 struct *uthread_tcb curThread;
 int thread_id = 0;							
 
-enum STATE 
+typedef enum
 {
 	RUNNING,
 	READY,
 	BLOCKED,
 	UNBLOCKED,
 	IDLE
-};
+} uthread_state ;
 
 struct thread_func{
 
@@ -37,12 +37,20 @@ struct uthread_tcb {
 	int id;
 };
 
+<<<<<<< Updated upstream
 // not needed im using a global
 // We actually need this for later
 // struct uthread_tcb *uthread_current(void)
 // {
 // 	/* TODO Phase 2 */
 // }
+=======
+not needed im using a global
+struct uthread_tcb *uthread_current(void)
+{
+	/* TODO Phase 2 */
+}
+>>>>>>> Stashed changes
 
 
 void uthread_yield(void)
