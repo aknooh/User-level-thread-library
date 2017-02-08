@@ -38,10 +38,23 @@ struct uthread_tcb {
 };
 
 
+// A thread array to store blocked threads
+struct uthread_tcb* blocked;
+int index = -1;
+
+// not needed im using a global
+// We actually need this for later
+// struct uthread_tcb *uthread_current(void)
+// {
+// 	/* TODO Phase 2 */
+// }
+// ======= not needed im using a global
+
 struct uthread_tcb *uthread_current(void)
 {
 	return curThread;
 }
+
 
 
 void uthread_yield(void)
@@ -113,11 +126,37 @@ void uthread_exit(void)
 void uthread_block(void)
 {
 	/* TODO Phase 2 */
+	// First, save current thread 
+	// Second, block current thread 
+	struct uthread_tcb* newBthread = 
+				(struct uthread_tcb*)malloc(sizeof(struct uthread_tcb));
+	if(newBthread == NULL){
+		fprintf(stderr, "Failure to allocate new Bthread.\n");
+		return -1;
+	}
+
+	newBthread->context = curThread->context;
+	newBthread->state = BLOCKED;
+	newBthread->id = curThread->id;
+	newBthread->stack = curThread->stack;
+	if(index == -1){
+		blocked = (struct uthread_tcb*)malloc(10* (sizeof(struct uthread_tcb) / (struct uthread_tcb) );
+	}
+	index++;
+	if(index >= sizeof(struct uthread_tcb)){
+		blocked = realloc(blocked, (sizeof(struct uthread_tcb) / (struct uthread_tcb) * 2);		// double size of the array
+	}
+	else{
+		blocked[index] = newBthread;
+	}
+	curThread->state = BLOCKED;
 }
 
 void uthread_unblock(struct uthread_tcb *uthread)
 {
 	/* TODO Phase 2 */
+
+
 }
 
 
