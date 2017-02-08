@@ -38,6 +38,7 @@ struct uthread_tcb {
 };
 
 // not needed im using a global
+// We actually need this for later
 // struct uthread_tcb *uthread_current(void)
 // {
 // 	/* TODO Phase 2 */
@@ -127,8 +128,8 @@ void uthread_start(uthread_func_t start, void *arg)
 	// initialize thread properties
 	idle_thread->context = (uthread_ctx_t *)malloc(sizeof(uthread_ctx_t));
 	idle_thread->state   = IDLE;
-	idle_thread->id      = idle_thread_id++;
-	idle_thread->stack   = uthread_ctx_alloc_stack();
+	idle_thread->id      = thread_id++;
+	idle_thread->stack   = uthread_ctx_alloc_stack();			// we don't need to initialize the stack for idle
 
 	// set current thread to
 	curThread = idle_thread;
