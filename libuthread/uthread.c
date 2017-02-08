@@ -42,13 +42,6 @@ struct uthread_tcb {
 struct uthread_tcb* blocked;
 int index = -1;
 
-// not needed im using a global
-// We actually need this for later
-// struct uthread_tcb *uthread_current(void)
-// {
-// 	/* TODO Phase 2 */
-// }
-// ======= not needed im using a global
 
 struct uthread_tcb *uthread_current(void)
 {
@@ -120,7 +113,14 @@ int uthread_create(uthread_func_t func, void *arg)
 
 void uthread_exit(void)
 {
-	/* TODO Phase 2 */
+	struct uthread_tcb *cur = uthread_current();
+	cur->state = TERMINATED;
+	free(cur->stack);
+	free(cur->context);
+
+	// if ()
+	// free(cur);
+	uthread_yield();
 }
 
 void uthread_block(void)
@@ -170,7 +170,6 @@ void uthread_start(uthread_func_t start, void *arg)
 	}
 
 	// initialize main idle thread and current thread
-	curThread = (struct uthread_tcb*)malloc(sizeof(struct uthread_tcb));
 	struct uthread_tcb* idle_thread = 
 				(struct uthread_tcb*)malloc(sizeof(struct uthread_tcb));
 	if (idle_thread == NULL) {
@@ -198,6 +197,6 @@ void uthread_start(uthread_func_t start, void *arg)
 	// set idle 
 	while(queue_length(queue) != 0) 
 		uthread_yield();
-	
-	free(curThread);
+
+	uthread_exit();
 }
