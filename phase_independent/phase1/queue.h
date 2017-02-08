@@ -86,5 +86,5 @@ int queue_length(queue_t queue);
 
 /* DEBUGGING FUNCTIONS COMMENT OUT LATER*/
 void queue_iterate_db(queue_t queue);
-void queue_pop(queue_t queue);
+int queue_pop(queue_t queue);
 #endif /* _QUEUE_H */

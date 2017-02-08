@@ -59,7 +59,7 @@ void test_all()
 	assert(queue_length(queue) == 4);
 
 	// dequeue
-	queue_pop(queue); 
+	assert(queue_pop(queue) == 0);
 	queue_iterate_db(queue);
 	assert(queue_length(queue) == 3);
 
@@ -80,14 +80,23 @@ void test_all()
 	*data13 = 13;
 	queue_t queue2 = queue_create();
 	
-	queue_enqueue(queue, data11); queue_iterate_db(queue); // 11
-	queue_pop(queue); 			  queue_iterate_db(queue); // (empty)
-	assert(queue_length(queue) == 0);
-	assert(queue_delete(queue,data11) == 0); 			   // empty element not found
+	queue_enqueue(queue2, data11); queue_iterate_db(queue2); // 11
+	assert(queue_pop(queue2) == 0);	   
+	queue_iterate_db(queue2); 								 // (empty)
+	
+	assert(queue_length(queue2) == 0);
+	assert(queue_delete(queue2, data12) == 0); 			     // empty element not found
 
-	queue_enqueue(queue, data12); queue_iterate_db(queue); // 12
-	assert(queue_length(queue) == 1);
-	assert(queue_delete(queue,data13) == -1); 			   // element does not exist
+	queue_enqueue(queue2, data12); queue_iterate_db(queue2); // 12
+	assert(queue_length(queue2) == 1);
+	assert(queue_delete(queue2, data13) == -1); 			 // element does not exist
+	queue_enqueue(queue2, data13); queue_iterate_db(queue2); // 12, 13
+	
+	assert(queue_pop(queue2) == 0);	
+	assert(queue_length(queue2) == 0);
+	assert(queue_pop(queue2) == -1);	
+
+	queue_destroy(queue2);
 }
 
 int main(void)

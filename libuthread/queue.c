@@ -24,10 +24,10 @@ bool queue_empty(queue_t queue)
 	return queue_length(queue) == 0;
 }
 
-void queue_pop(queue_t queue)
+int queue_pop(queue_t queue)
 {
 	if (queue_empty(queue)
-		|| queue == NULL) return;
+		|| queue == NULL) return -1;
 
 	node *temp_rm;
 	temp_rm = queue->front;
@@ -40,6 +40,8 @@ void queue_pop(queue_t queue)
 
 	queue->size--;
 	free(temp_rm);
+	
+	return 0;
 }
 
 void *queue_front(queue_t queue)
@@ -54,6 +56,7 @@ queue_t queue_create(void)
 	queue_t q = malloc(sizeof(struct queue));
 	q->back = q->front = NULL;
 	q->size = 0;
+	return q;
 }
 
 int queue_destroy(queue_t queue)
@@ -101,6 +104,10 @@ int queue_dequeue(queue_t queue, void **data)
 	if (queue_empty(queue)
 		|| queue == NULL) return -1;
 
+	// save the data to use in context
+	// swtich in yield
+	*data = queue->front->data;
+
 	node *temp_rm;
 	temp_rm = queue->front;
 	queue->front = queue->front->next;
@@ -112,8 +119,6 @@ int queue_dequeue(queue_t queue, void **data)
 
 	queue->size--;
 	free(temp_rm);
-
-	*data = queue->front->data;
 
 	return 0;
 }
