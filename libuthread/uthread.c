@@ -12,31 +12,82 @@
 #include "queue.h"
 #include "uthread.h"
 
-queue_t Queue;					// main Queue to hold threads 
-								// global so all functions can access it
+// global access array (all threads)
+queue_t queue;		
+struct *uthread_tcb curThread;
+int thread_id = 0;							
 
-// thread function struct to store a function
-// and its argument in the queue.
-struct thread_func{
-	char uthread_func_name[64];
-	void *arg;
-	//char *argChar;				// if arg is char
-//	int argInt;					// if arg is int
+enum STATE 
+{
+	RUNNING,
+	READY,
+	BLOCKED,
+	UNBLOCKED,
+	IDLE
 };
 
+struct thread_func{
+
+};
 
 struct uthread_tcb {
-	/* TODO Phase 2 */
+	uthread_ctx_t *context;
+	void* stack;
+	enum STATE state;
+	int id;
 };
+
+// not needed im using a global
+// struct uthread_tcb *uthread_current(void)
+// {
+// 	/* TODO Phase 2 */
+// }
+
 
 void uthread_yield(void)
 {
-	/* TODO Phase 2 */
+	// block current state
+	curThread->state = BLOCKED;
+
+	// store the element that is dequeued
+	void **front = malloc(sizeof(void**));
+	if (queue_dequeue(threadList, front) == -1) 
+		fprintf(stderr, "Failure to dequeue from queue.\n");
+
+	struct uthread_tcb *next = *front;
+	curThread = next;
+
+	// switch with the dequeue one
+	uthread_ctx_switch(curThread->context, next->context);
+	queue_enqueue(queue, curThread);
 }
 
 int uthread_create(uthread_func_t func, void *arg)
 {
-	/* TODO Phase 2 */
+	// initialize thread and current thread
+	curThread = (struct uthread_tcb*)malloc(sizeof(struct uthread_tcb));
+	struct uthread_tcb* thread = 
+				(struct uthread_tcb*)malloc(sizeof(struct uthread_tcb));
+	if (thread == NULL) {
+		fprintf(stderr, "Failure to allocate memory to thread tcb.\n");
+		return;
+	}
+
+	// initialize thread properties
+	thread->context = (uthread_ctx_t *)malloc(sizeof(uthread_ctx_t));
+	thread->state = RUNNING;
+	thread->id = thread_id++;
+	thread->stack = uthread_ctx_alloc_stack();
+
+	// initialize thread execution context
+	if (uthread_ctx_init(thread->context, thread->stack, func, arg) == -1) {
+		fprintf(stderr, "Failure to initialize execution context");
+		return -1;
+	}
+	
+	// enqueue thread
+	queue_enqueue(queue, thread);
+	return 0;
 }
 
 void uthread_exit(void)
@@ -54,26 +105,42 @@ void uthread_unblock(struct uthread_tcb *uthread)
 	/* TODO Phase 2 */
 }
 
-struct uthread_tcb *uthread_current(void)
-{
-	/* TODO Phase 2 */
-}
 
 void uthread_start(uthread_func_t start, void *arg)
 {
-	int newStatus;
-	thread_func start_func;
-	strcpy(start_func.uthread_func_name, (char**) start);
-	start_func.arg = arg; 
-	Queue = queue_create(void);		// create a a Queue object
-	newStatus = queue_enqueue(Queue,start);
+	// initialize queue
+	queue = queue_create();
+	if (queue == NULL) {
+		fprintf(stderr, "Failure to allocate memory to queue. \n");
+		return;
+	}
 
-// I added some new stuff
-while(Queue.length()>-1)
-{
-	uthread_yield();		// yield to other threads 
-}
+	// initialize main idle thread and current thread
+	curThread = (struct uthread_tcb*)malloc(sizeof(struct uthread_tcb));
+	struct uthread_tcb* idle_thread = 
+				(struct uthread_tcb*)malloc(sizeof(struct uthread_tcb));
+	if (idle_thread == NULL) {
+		fprintf(stderr, "Failure to allocate memory to thread tcb.\n");
+		return;
+	}
 
+	// initialize thread properties
+	idle_thread->context = (uthread_ctx_t *)malloc(sizeof(uthread_ctx_t));
+	idle_thread->state   = IDLE;
+	idle_thread->id      = idle_thread_id++;
+	idle_thread->stack   = uthread_ctx_alloc_stack();
 
-	/* TODO Phase 2 */
+	// set current thread to
+	curThread = idle_thread;
+
+	if(uthread_create(start, arg) == -1) {
+		fprintf(stderr, "Error: fail to create idle_thread.\n");
+		return ;
+	}
+
+	// set idle 
+	while(queue_length(queue) != 0) 
+		uthread_yield();
+	
+	free(curThread);
 }
