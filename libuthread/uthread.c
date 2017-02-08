@@ -40,7 +40,7 @@ struct uthread_tcb {
 
 // A thread array to store blocked threads
 struct uthread_tcb* blocked;
-int index = -1;
+int indexb = -1;
 
 
 struct uthread_tcb *uthread_current(void)
@@ -120,7 +120,7 @@ void uthread_exit(void)
 
 	// if ()
 	// free(cur);
-	uthread_yield();
+	//uthread_yield();
 }
 
 void uthread_block(void)
@@ -128,6 +128,7 @@ void uthread_block(void)
 	/* TODO Phase 2 */
 	// First, save current thread 
 	// Second, block current thread 
+	/*
 	struct uthread_tcb* newBthread = 
 				(struct uthread_tcb*)malloc(sizeof(struct uthread_tcb));
 	if(newBthread == NULL){
@@ -139,15 +140,20 @@ void uthread_block(void)
 	newBthread->state = BLOCKED;
 	newBthread->id = curThread->id;
 	newBthread->stack = curThread->stack;
-	if(index == -1){
-		blocked = (struct uthread_tcb*)malloc(10* (sizeof(struct uthread_tcb) / (struct uthread_tcb) );
+		*/
+	if(indexb == -1){
+		blocked = (struct uthread_tcb*)malloc(10* sizeof( struct uthread_tcb) );
 	}
-	index++;
-	if(index >= sizeof(struct uthread_tcb)){
-		blocked = realloc(blocked, (sizeof(struct uthread_tcb) / (struct uthread_tcb) * 2);		// double size of the array
+	indexb++;
+
+	if(indexb >= sizeof(struct uthread_tcb)){
+		blocked = realloc(blocked, (2* sizeof( struct uthread_tcb)));		// double size of the array
 	}
 	else{
-		blocked[index] = newBthread;
+		blocked[indexb].context = curThread->context;
+		blocked[indexb].state = BLOCKED;
+		blocked[indexb].id = curThread->id;
+		blocked[indexb].stack = curThread->stack;
 	}
 	curThread->state = BLOCKED;
 }
