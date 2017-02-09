@@ -13,8 +13,9 @@
 #include "uthread.h"
 
 // global access array (all threads)
-queue_t queue;		
-struct uthread_tcb* curThread;
+// note: semaphore_queue always contains blocked ppl
+queue_t queue, semaphore_queue;		
+struct uthread_tcb* curThread, cur_sem_thread;
 int thread_id = 0;							
 
 
@@ -23,7 +24,6 @@ typedef enum
 	RUNNING,
 	READY,
 	BLOCKED,
-	WAIT,
 	TERMINATED
 } uthread_state_t;
 
@@ -131,14 +131,38 @@ void uthread_exit(void)
 	uthread_yield();
 }
 
+/* 
+ * Finds the first element in the queue 
+ * that is blocked
+ */
+
+// void find_oldest_blocked(void *data)
+// {
+// 	struct uthread_tcb *front = (int*)data;
+// 	if(*my_int == 35)
+// 		queue_delete(queue, data);
+// }
+
 void uthread_block(void)
 {
 
+	// find it in the queue 
+	curThread->state = BLOCKED;
+	uthread_yield();
 }
+
 
 void uthread_unblock(struct uthread_tcb *uthread)
 {
+	// must come from a blocked stated
+	assert(uthread->state == BLOCKED);
+	assert(uthread->state != READY);
+	// find the thread in the queue and change state
+	queue_delete(queue, uthread);
+	uthread->state = READY;
 
+	// enqueue back into the queue 
+	queue_enqueue(queue, uthread);
 }
 
 
