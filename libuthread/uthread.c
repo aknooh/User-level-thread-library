@@ -24,8 +24,6 @@ typedef enum
 	READY,
 	BLOCKED,
 	WAIT,
-	NO_STATE,
-	ZOMBIE,
 	TERMINATED
 } uthread_state_t;
 
@@ -36,11 +34,6 @@ struct uthread_tcb {
 	uthread_state_t state;
 	int 			id;
 };
-
-
-// A thread array to store blocked threads
-struct uthread_tcb* blocked;
-int indexb = -1;
 
 
 struct uthread_tcb *uthread_current(void)
@@ -54,28 +47,45 @@ void uthread_yield(void)
 {
 	// save current state and block it
 	struct uthread_tcb* cur_save = uthread_current();
-	curThread->state = BLOCKED;
+
+	// if the current state is running, then it hasnt
+	// finished its execution, so its we reset its 
+	// state to ready.
+	if (cur_save->state == RUNNING)
+		cur_save->state = READY;
 
 	// save oldest element in the queue
-	void **front = malloc(sizeof(void**));
-	if (queue_dequeue(queue, front) == -1) {
+	struct uthread_tcb *front;
+	if (queue_dequeue(queue, (void**) &front) == -1) {
 		fprintf(stderr, "Failure to dequeue from queue.\n");
 		return;
-	}
+	} //printf("id: %d\n", front->id);
+
 	// the oldest element in the queue is now ready 
-	// to be next thread in context execution
-	struct uthread_tcb *next = *front;
-	next->state = READY;
+	// to be next thread in context execution but it
+	// had to have come from a ready state since it was queued
+	assert(front->state == READY);
+
+	// and is now the next context execution to run 
+	front->state = RUNNING;
 
 	// current thread becomes the new thread from queue
-	curThread = next;
+	curThread = front;
+
+	// enqueue the old one to the back of the queue
+	if (cur_save->state == READY)
+		queue_enqueue(queue, cur_save);
 
 	// switch context from the previous one 
 	// to the new one from the dequeue
-	uthread_ctx_switch(cur_save->context, next->context);
+	uthread_ctx_switch(cur_save->context, front->context);
 
-	// enqueue the old one back into the queue
-	queue_enqueue(queue, cur_save);
+	if (cur_save->state == TERMINATED) {
+		free(cur_save->context);
+		free(cur_save->stack);
+		free(cur_save);
+		cur_save = NULL;
+	}
 }
 
 
@@ -113,60 +123,21 @@ int uthread_create(uthread_func_t func, void *arg)
 
 void uthread_exit(void)
 {
-	struct uthread_tcb *cur = uthread_current();
-	cur->state = TERMINATED;
-	free(cur->stack);
-	free(cur->context);
+	struct uthread_tcb *cur_running = uthread_current();
+	free(cur_running->stack);
+	cur_running->state = TERMINATED;
 
-	// if ()
-	// free(cur);
-	//uthread_yield();
+	// goto next thread in queue
+	uthread_yield();
 }
 
 void uthread_block(void)
 {
-	/* TODO Phase 2 */
-	// First, save current thread 
-	// Second, block current thread 
-	/*
-	struct uthread_tcb* newBthread = 
-				(struct uthread_tcb*)malloc(sizeof(struct uthread_tcb));
-	if(newBthread == NULL){
-		fprintf(stderr, "Failure to allocate new Bthread.\n");
-		return -1;
-	}
 
-	newBthread->context = curThread->context;
-	newBthread->state = BLOCKED;
-	newBthread->id = curThread->id;
-	newBthread->stack = curThread->stack;
-		*/
-	if(indexb == -1){
-		blocked = (struct uthread_tcb*)malloc(10* sizeof( struct uthread_tcb) );
-	}
-	indexb++;
-
-	if(indexb >= sizeof(struct uthread_tcb)){
-		blocked = realloc(blocked, (2* sizeof( struct uthread_tcb)));		// double size of the array
-	}
-	else{
-		blocked[indexb].context = curThread->context;
-		blocked[indexb].state = BLOCKED;
-		blocked[indexb].id = curThread->id;
-		blocked[indexb].stack = curThread->stack;
-	}
-	curThread->state = BLOCKED;
 }
 
 void uthread_unblock(struct uthread_tcb *uthread)
 {
-	/* TODO Phase 2 */
-	int count;
-	for(count= 0; count < indexb; count++){
-		if(blocked[count].id == uthread->id){
-			blocked[count].state = READY;
-		}
-	}
 
 }
 
@@ -194,7 +165,7 @@ void uthread_start(uthread_func_t start, void *arg)
 		fprintf(stderr, "Failure to allocate memory to context.\n");
 		return;
 	}
-	idle_thread->state   = NO_STATE;
+	idle_thread->state   = RUNNING;
 	idle_thread->id      = thread_id++;
 
 	// set current thread to
@@ -208,6 +179,4 @@ void uthread_start(uthread_func_t start, void *arg)
 	// set idle 
 	while(queue_length(queue) != 0) 
 		uthread_yield();
-
-	uthread_exit();
 }
