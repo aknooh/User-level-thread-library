@@ -20,7 +20,15 @@ struct sigaction sig_a;
 void preempt_save(sigset_t *level)
 {
 	// save current preemption status and disable preemption
-	sigprocmask(0, NULL, level);
+//int sigprocmask(int how, const sigset_t *set, sigset_t *oldset);
+	if(sigprocmask(0, NULL, level) == -1){
+		fprintf(stderr, "Failure to save signal mask.\n");
+		return;
+	}
+/*
+	int isOn = sigismember(&level, SIGVTALRM);
+
+*/
 	preempt_disable();
 }
 
@@ -32,11 +40,20 @@ void preempt_restore(sigset_t *level)
 void preempt_enable(void)
 {
 	/* TODO Phase 4 */
+	sigset_t newSignal;
+	sigemptyset(&newSignal);		
+	sigaddset(&newSignal,SIGVTALRM);				// Add Alarm Signal 
+	sigprocmask(SIG_UNBLOCK,&newSignal,NULL);		// block Alarm Signal
 }
 
 void preempt_disable(void)
 {
 	/* TODO Phase 4 */
+
+	sigset_t newSignal;
+	sigemptyset(&newSignal);		
+	sigaddset(&newSignal,SIGVTALRM);				// Add Alarm Signal 
+	sigprocmask(SIG_BLOCK,&newSignal,NULL);		// block Alarm Signal
 }
 
 bool preempt_disabled(void)
