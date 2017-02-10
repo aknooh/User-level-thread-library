@@ -15,7 +15,7 @@
 // global access array (all threads)
 // note: semaphore_queue always contains blocked ppl
 queue_t queue, semaphore_queue;		
-struct uthread_tcb* curThread, cur_sem_thread;
+struct uthread_tcb* curThread, *cur_sem_thread;
 int thread_id = 0;							
 
 
@@ -45,7 +45,7 @@ struct uthread_tcb *uthread_current(void)
 
 void uthread_yield(void)
 {
-	// save current state and block it
+	// save current state
 	struct uthread_tcb* cur_save = uthread_current();
 
 	// if the current state is running, then it hasnt
@@ -134,8 +134,6 @@ void uthread_exit(void)
 
 void uthread_block(void)
 {
-
-	// find it in the queue 
 	curThread->state = BLOCKED;
 	uthread_yield();
 }
@@ -145,8 +143,8 @@ void uthread_unblock(struct uthread_tcb *uthread)
 {
 	// must come from a blocked stated
 	assert(uthread->state == BLOCKED);
+
 	// find the thread in the queue and change state
-	queue_delete(queue, uthread);
 	uthread->state = READY;
 
 	// enqueue back into the queue 
