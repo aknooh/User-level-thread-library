@@ -18,7 +18,9 @@
 
 void preempt_save(sigset_t *level)
 {
-	/* TODO Phase 4 */
+	// save current preemption status and disable preemption
+	sigprocmask(0, NULL, level);
+	preempt_disable();
 }
 
 void preempt_restore(sigset_t *level)

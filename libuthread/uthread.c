@@ -124,6 +124,8 @@ int uthread_create(uthread_func_t func, void *arg)
 void uthread_exit(void)
 {
 	struct uthread_tcb *cur_running = uthread_current();
+	
+	free(cur_running->context);
 	free(cur_running->stack);
 	cur_running->state = TERMINATED;
 
