@@ -182,7 +182,7 @@ void uthread_start(uthread_func_t start, void *arg)
 
 	// set current thread to
 	curThread = idle_thread;
-	preempt_start();
+	//preempt_start();
 
 	if(uthread_create(start, arg) == -1) {
 		fprintf(stderr, "Error: fail to create idle_thread.\n");
