@@ -1,6 +1,7 @@
 #include <assert.h>
 #include <stddef.h>
 #include <stdlib.h>
+#include <stdio.h>
 
 #define _UTHREAD_PRIVATE
 #include "preempt.h"
@@ -9,18 +10,18 @@
 #include "uthread.h"
 
 struct semaphore {
-	int sem_count;
-	struct *queue wait_list;
+	size_t sem_count;
+	struct queue* wait_list;
 };
 
 sem_t sem_create(size_t count)
 {
 	struct semaphore *new_sem = malloc(sizeof(struct semaphore));
-	int sem_count = count;
-	wait_list = queue_create();
+	if (new_sem == NULL) return NULL;
 
-	if (new_sum == NULL) return NULL;
-	else return new_sum;
+	new_sem->wait_list = queue_create();
+	new_sem->sem_count = count;
+	return new_sem;
 }
 
 int sem_destroy(sem_t sem)
@@ -45,7 +46,6 @@ int sem_down(sem_t sem)
 
 	// otherwise, another resource is consumed
 	else --sem->sem_count;
-	
 	return 0;
 }
 
@@ -64,6 +64,7 @@ int sem_up(sem_t sem)
 		}
 		uthread_unblock(front);
 	}
+	// otherwise release the resource 
 	else ++sem->sem_count;
+	return 0;
 }
-
