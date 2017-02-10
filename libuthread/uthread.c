@@ -124,7 +124,7 @@ int uthread_create(uthread_func_t func, void *arg)
 void uthread_exit(void)
 {
 	struct uthread_tcb *cur_running = uthread_current();
-	
+
 	free(cur_running->context);
 	free(cur_running->stack);
 	cur_running->state = TERMINATED;
@@ -182,6 +182,7 @@ void uthread_start(uthread_func_t start, void *arg)
 
 	// set current thread to
 	curThread = idle_thread;
+	preempt_start();
 
 	if(uthread_create(start, arg) == -1) {
 		fprintf(stderr, "Error: fail to create idle_thread.\n");

@@ -15,6 +15,7 @@
  * 100Hz is 100 times per second
  */
 #define HZ 100
+struct sigaction sig_a;
 
 void preempt_save(sigset_t *level)
 {
@@ -40,7 +41,9 @@ void preempt_disable(void)
 
 bool preempt_disabled(void)
 {
-	/* TODO Phase 4 */
+	if (sig_a.sa_handler == SIG_IGN) {
+		return 1;
+	} return 0;
 }
 
 /*
@@ -49,7 +52,7 @@ bool preempt_disabled(void)
  */
 static void timer_handler(int signo)
 {
-	/* TODO Phase 4 */
+	uthread_yield();
 }
 
 void preempt_start(void)
