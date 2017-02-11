@@ -14,22 +14,37 @@
 
 #include <uthread.h>
 
+void thread4(void* arg)
+{
+    getchar();
+    while(1)
+        printf("thread4\n");
+}
+
+void thread3(void* arg)
+{
+    getchar();
+    while(1)
+        printf("thread3\n");
+}
 
 void thread2(void* arg)
 {
-	printf("thread2\n");
     getchar();
+    while(1)
+        printf("thread2\n");
 }
 
 void thread1(void* arg)
 {
 	uthread_create(thread2, NULL);
+	uthread_create(thread3, NULL);
+	uthread_create(thread4, NULL);
+    
+	getchar();
     while(1)
-    {
-        printf("loop\n");
-    }
-	//uthread_yield();
-	printf("thread1\n");
+        printf("thread1\n");
+    
 }
 
 int main(void)
