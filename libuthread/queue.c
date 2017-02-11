@@ -189,6 +189,13 @@ int queue_length(queue_t queue)
 	return queue->size;
 }
 
+
+/*
+ * Iterates through the queue to print the elements
+ * contained within them. We could have alternatively 
+ * used queue iterate and have the function pointer
+ * dereference the data.
+ */
 void queue_iterate_db(queue_t queue)
 {
 	if(queue == NULL) return;

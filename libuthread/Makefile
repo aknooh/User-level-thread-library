@@ -5,7 +5,7 @@ all: libuthread.a
 libuthread.a: queue.o context.o uthread.o semaphore.o preempt.o
 	ar crs libuthread.a queue.o context.o uthread.o semaphore.o preempt.o
 
-queue.o: queue.c queue.h uthread.h preempt.h
+queue.o: queue.c queue.h 
 	gcc $(CFLAGS) -c queue.c
 
 context.o: context.c context.h

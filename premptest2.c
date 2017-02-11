@@ -1,12 +1,10 @@
 /*
- * Thread creation and yielding test
+ * Thread creation, yielding, and termination
  *
- * Tests the creation of multiples threads and the fact that a parent thread
- * should get returned to before its child is executed. The way the printing,
- * thread creation and yielding is done, the program should output:
- * thread1
- * thread2
- * thread3
+ * A few threads will be in a while loop so, termination for some will 
+ * not end. However, other threads will eventually terminate so its 
+ * context should eventually end, and the final result should iterate
+ * through two different infinite loops.
  */
 
 #include <stdio.h>
@@ -14,23 +12,29 @@
 
 #include <uthread.h>
 
+
+void thread5(void* arg)
+{
+    for (int i = 0; i < 99999; i++) {
+        printf("thread5\n");
+    }   
+}
+
 void thread4(void* arg)
 {
-    getchar();
     while(1)
         printf("thread4\n");
 }
 
 void thread3(void* arg)
 {
-    getchar();
-    while(1)
+    for (int i = 0; i < 99999; i++) {
         printf("thread3\n");
+    }        
 }
 
 void thread2(void* arg)
 {
-    getchar();
     while(1)
         printf("thread2\n");
 }
@@ -40,8 +44,8 @@ void thread1(void* arg)
 	uthread_create(thread2, NULL);
 	uthread_create(thread3, NULL);
 	uthread_create(thread4, NULL);
-    
-	getchar();
+    uthread_create(thread5, NULL);
+
     while(1)
         printf("thread1\n");
     

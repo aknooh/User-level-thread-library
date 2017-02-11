@@ -43,7 +43,6 @@ struct uthread_tcb *uthread_current(void)
 }
 
 
-
 void uthread_yield(void)
 {
 	// save current state
@@ -129,12 +128,12 @@ int uthread_create(uthread_func_t func, void *arg)
 		return -1;
 	}
 	
-	// enqueue thread
-		
 	// Disable Preemption
 	if(!(preempt_disabled())){
 		preempt_disable();
-		}	
+	}	
+
+	// enqueue thread
 	queue_enqueue(queue, thread);
 	preempt_enable();
 	return 0;
@@ -169,11 +168,11 @@ void uthread_unblock(struct uthread_tcb *uthread)
 	// find the thread in the queue and change state
 	uthread->state = READY;
 
-	
 	// Disable Preemption
 	if(!(preempt_disabled())){
 		preempt_disable();
-		}	
+	}
+
 	// enqueue back into the queue 
 	queue_enqueue(queue, uthread);
 	preempt_enable();
@@ -184,12 +183,13 @@ void uthread_start(uthread_func_t start, void *arg)
 {
 	// Start Preemption
 	preempt_start();
-	// initialize queue
 		
 	// Disable Preemption
 	if(!(preempt_disabled())){
 		preempt_disable();
-		}	
+	}	
+	
+	// initialize queue
 	queue = queue_create();
 	preempt_enable();
 	if (queue == NULL) {
@@ -216,7 +216,6 @@ void uthread_start(uthread_func_t start, void *arg)
 
 	// set current thread to
 	curThread = idle_thread;
-	//preempt_start();
 
 	if(uthread_create(start, arg) == -1) {
 		fprintf(stderr, "Error: fail to create idle_thread.\n");
