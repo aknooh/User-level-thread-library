@@ -18,7 +18,7 @@
 
 void preempt_save(sigset_t *level)
 {
-	printf("preempt_save() called\n");
+	//printf("preempt_save() called\n");
 	// save current preemption status and disable preemption
 	if(sigprocmask(0, NULL, level) == -1){
 		fprintf(stderr, "Failure to save signal mask.\n");
@@ -29,14 +29,14 @@ void preempt_save(sigset_t *level)
 
 void preempt_restore(sigset_t *level)
 {
-	printf("preempt_restore() called\n");
+	//printf("preempt_restore() called\n");
 	// Reset current mask to `level` mask
 	sigprocmask(SIG_SETMASK,level,NULL);
 }
 
 void preempt_enable(void)
 {
-	printf("preempt_enable() called\n");
+	//printf("preempt_enable() called\n");
 	sigset_t newSignal;
 	sigemptyset(&newSignal);		
 	// Add Alarm Signal 
@@ -47,7 +47,7 @@ void preempt_enable(void)
 
 void preempt_disable(void)
 {
-	printf("preempt_disable() called\n");
+	//printf("preempt_disable() called\n");
 	// create a new signal.
 	sigset_t newSignal;
 	// Set signal to empty 
@@ -75,7 +75,7 @@ bool preempt_disabled(void)
  */
 static void timer_handler(int signo)
 {
-	printf("interrupt Handler called.\n");
+	//printf("interrupt Handler called.\n");
 	// Force currently running thread to yield.
 	uthread_yield();
 }

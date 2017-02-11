@@ -93,7 +93,7 @@ void uthread_yield(void)
 	// switch context from the previous one 
 	// to the new one from the dequeue
 	uthread_ctx_switch(cur_save->context, front->context);
-	preempt_disable();
+	preempt_enable();
 	if (cur_save->state == TERMINATED) {
 		free(cur_save->context);
 		free(cur_save->stack);

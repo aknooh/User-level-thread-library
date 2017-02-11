@@ -16,7 +16,12 @@ struct semaphore {
 
 sem_t sem_create(size_t count)
 {
+			// Disable Preemption
+	if(!(preempt_disabled())){
+			preempt_disable();
+		}
 	struct semaphore *new_sem = malloc(sizeof(struct semaphore));
+	preempt_enable();
 	if (new_sem == NULL) return NULL;
 
 	new_sem->wait_list = queue_create();
@@ -27,7 +32,12 @@ sem_t sem_create(size_t count)
 int sem_destroy(sem_t sem)
 {
 	if (sem == NULL) return -1;
+	// Disable Preemption
+	if(!(preempt_disabled())){
+		preempt_disable();
+	}
 	if (queue_destroy(sem->wait_list) == -1) return -1;
+	preempt_enable();
 	free(sem);
 	return 0;
 }
