@@ -16,7 +16,8 @@
 // note: semaphore_queue always contains blocked ppl
 queue_t queue, semaphore_queue;		
 struct uthread_tcb* curThread, *cur_sem_thread;
-int thread_id = 0;							
+int thread_id = 0;
+sigset_t SavedMask;					
 
 
 typedef enum
@@ -92,7 +93,7 @@ void uthread_yield(void)
 	// switch context from the previous one 
 	// to the new one from the dequeue
 	uthread_ctx_switch(cur_save->context, front->context);
-
+	preempt_disable();
 	if (cur_save->state == TERMINATED) {
 		free(cur_save->context);
 		free(cur_save->stack);

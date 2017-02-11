@@ -18,6 +18,7 @@
 void thread2(void* arg)
 {
 	printf("thread2\n");
+    getchar();
 }
 
 void thread1(void* arg)

@@ -14,19 +14,11 @@ void uthread_ctx_switch(uthread_ctx_t *prev, uthread_ctx_t *next)
 	/*
 	 * swapcontext() saves the current context in structure pointer by @prev
 	 * and actives the context pointed by @next
-	 */
-	// Disable preemption before context switching
-		
-	// Disable Preemption
-	if(!(preempt_disabled())){
-		preempt_disable();
-		}	
+	 */	
 	if (swapcontext(prev, next)) {
 		perror("swapcontext");
 		exit(1);
 	}
-	// Enable preemption afterwards
-	preempt_enable();
 }
 
 void *uthread_ctx_alloc_stack(void)
@@ -46,8 +38,7 @@ void uthread_ctx_destroy_stack(void *top_of_stack)
  */
 static void uthread_ctx_bootstrap(uthread_func_t func, void *arg)
 {
-	
-
+	preempt_start();
 	/* Execute thread and when done, exit */
 	func(arg);
 	uthread_exit();
