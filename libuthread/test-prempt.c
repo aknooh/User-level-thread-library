@@ -6,7 +6,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-//#include "preempt.h"
+#include "preempt.h"
 #include "uthread.h"
 
 void hello(void* arg)

@@ -16,11 +16,9 @@
  */
 #define HZ 100
 
-// To Save state of Alaram Signal 
-bool isDisabled;
-
 void preempt_save(sigset_t *level)
 {
+	printf("preempt_save() called\n");
 	// save current preemption status and disable preemption
 	if(sigprocmask(0, NULL, level) == -1){
 		fprintf(stderr, "Failure to save signal mask.\n");
@@ -31,23 +29,25 @@ void preempt_save(sigset_t *level)
 
 void preempt_restore(sigset_t *level)
 {
+	printf("preempt_restore() called\n");
 	// Reset current mask to `level` mask
-	sigprocmask(SIG_SETMASK,&level,NULL);
+	sigprocmask(SIG_SETMASK,level,NULL);
 }
 
 void preempt_enable(void)
 {
+	printf("preempt_enable() called\n");
 	sigset_t newSignal;
 	sigemptyset(&newSignal);		
 	// Add Alarm Signal 
 	sigaddset(&newSignal,SIGVTALRM);
 	// block Alarm Signal
 	sigprocmask(SIG_UNBLOCK,&newSignal,NULL);
-	isDisabled = FALSE;
 }
 
 void preempt_disable(void)
 {
+	printf("preempt_disable() called\n");
 	// create a new signal.
 	sigset_t newSignal;
 	// Set signal to empty 
@@ -56,12 +56,17 @@ void preempt_disable(void)
 	sigaddset(&newSignal,SIGVTALRM); 
 	// block Alarm Signal
 	sigprocmask(SIG_BLOCK,&newSignal,NULL);
-	isDisabled = TRUE;
 }
 
 bool preempt_disabled(void)
 {
-	return isDisabled;
+	sigset_t currentMask;
+	sigprocmask(0, NULL, & currentMask);
+	if(sigismember(&currentMask,SIGVTALRM ))
+	{
+		return true;
+	}
+	 	return false;
 }
 
 /*
@@ -70,6 +75,7 @@ bool preempt_disabled(void)
  */
 static void timer_handler(int signo)
 {
+	printf("interrupt Handler called.\n");
 	// Force currently running thread to yield.
 	uthread_yield();
 }

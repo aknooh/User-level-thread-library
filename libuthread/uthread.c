@@ -56,11 +56,17 @@ void uthread_yield(void)
 
 	// save oldest element in the queue
 	struct uthread_tcb *front;
+
+	// Disable Preemption
+	if(!(preempt_disabled())){
+		preempt_disable();
+	}	
 	if (queue_dequeue(queue, (void**) &front) == -1) {
 		fprintf(stderr, "Failure to dequeue from queue.\n");
 		return;
 	} //printf("id: %d\n", front->id);
 
+	preempt_enable();
 	// the oldest element in the queue is now ready 
 	// to be next thread in context execution but it
 	// had to have come from a ready state since it was queued
@@ -74,8 +80,15 @@ void uthread_yield(void)
 
 	// enqueue the old one to the back of the queue
 	if (cur_save->state == READY)
+	{		
+		// Disable Preemption
+		if(!(preempt_disabled())){
+			preempt_disable();
+		}	
 		queue_enqueue(queue, cur_save);
-
+		preempt_enable();
+	}
+	
 	// switch context from the previous one 
 	// to the new one from the dequeue
 	uthread_ctx_switch(cur_save->context, front->context);
@@ -116,7 +129,13 @@ int uthread_create(uthread_func_t func, void *arg)
 	}
 	
 	// enqueue thread
+		
+	// Disable Preemption
+	if(!(preempt_disabled())){
+		preempt_disable();
+		}	
 	queue_enqueue(queue, thread);
+	preempt_enable();
 	return 0;
 }
 
@@ -149,15 +168,29 @@ void uthread_unblock(struct uthread_tcb *uthread)
 	// find the thread in the queue and change state
 	uthread->state = READY;
 
+	
+	// Disable Preemption
+	if(!(preempt_disabled())){
+		preempt_disable();
+		}	
 	// enqueue back into the queue 
 	queue_enqueue(queue, uthread);
+	preempt_enable();
 }
 
 
 void uthread_start(uthread_func_t start, void *arg)
 {
+	// Start Preemption
+	preempt_start();
 	// initialize queue
+		
+	// Disable Preemption
+	if(!(preempt_disabled())){
+		preempt_disable();
+		}	
 	queue = queue_create();
+	preempt_enable();
 	if (queue == NULL) {
 		fprintf(stderr, "Failure to allocate memory to queue.\n");
 		return;
