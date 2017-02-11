@@ -62,7 +62,7 @@ bool preempt_disabled(void)
 	{
 		return true;
 	}
-	 	return false;
+	return false;
 }
 
 /*

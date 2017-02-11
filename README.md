@@ -1,402 +1,185 @@
-This README was provided by the professor, and I'll rewirte it Once we finish.
-
-% ECS 150: Project #2 - User-level thread library
-%
-% UC Davis, Winter Quarter 2017
-
-# General information
+Project #2 - User-level thread library
 
-Due before **11:59 PM, Friday, Feb 10th, 2017**.
-
-You will be working with a partner for this project.
+# Introduction
 
-The reference work environment is the CSIF.
-
-# Specifications
+This library will provide a complete interface for applications to create and run independent threads concurrently.
 
-*Note that the specifications for this project are subject to change at anytime
-for additional clarification.*
+# Table of Contents
 
-## Introduction
+* ** Phase 1: Queue API ** 
+  * Functionality
+* ** Phase 2: thread API ** 
+  * Functinality
 
-The goal of this project is to understand the idea of threads, by implementing a
-basic user-level thread library for Linux. Your library will provide a complete
-interface for applications to create and run independent threads concurrently.
 
-Similar to existing lightweight user-level thread libraries, your library must
-be able to:
+# Phase 1: queue API
 
-1. Create new execution threads
-2. Schedule the execution of threads in a round-robin fashion
-3. Provide a thread synchronization API, namely semaphores
-4. Be preemptive, that is to provide an interrupt-based scheduler
+The queue is implemented via doubly-linked list. We encapsulate each element in the queue as a node that contained a void pointer - `void* data` - that effectively becomes the thread TCB. We chose this data structure because it allows us to expand dynamically on a per thread basis. Our queue supports `O(1)` operations for enqueues and dequeues along with iterating and finding any element in the list for needed operation of `queue_iterate()` and `queue_delete()`
 
-A working example of the thread library can be found on the CSIF, at
-`/home/jporquet/ecs150/libuthread.a`.
+## Functionality 
 
-### Skeleton code
+### queue_pop
 
-The skeleton code that you are expected to complete is available in the archive
-`/home/jporquet/ecs150/uthread.zip`. This code already defines most of the
-prototypes for the functions you must implement, as explained in the following
-sections.
+This function removes or "pops" and element from the front of the queue.
+Forwards the front pointer of the queue and adjusts pointers of the front and back if necessary. After this, the front element is read. We included this function for debugging purposes as well as to integrate it with `queue_destroy` which simplified our implementation and readability. 
 
-```
-$ tree
-.
-├── libuthread
-│   ├── context.c*
-│   ├── context.h
-│   ├── Makefile*
-│   ├── preempt.c*
-│   ├── preempt.h
-│   ├── queue.c*
-│   ├── queue.h
-│   ├── semaphore.c*
-│   ├── semaphore.h
-│   ├── uthread.c*
-│   └── uthread.h
-├── Makefile
-├── test1.c
-├── test2.c
-├── test3.c
-├── test4.c
-└── test5.c
-```
-
-The code is organized in two parts. At the root of the directory, there are some
-test applications which make use of the thread library. You can compile these
-applications and run them. In the subdirectory `libuthread`, there are the files
-composing the thread library that you must complete. The files to complete are
-marked with a star (you normally should not have to touch any of the files which
-are not marked with a star).
-
-## Phase 1: queue API
-
-In this first phase, you must implement a simple FIFO queue. The interface to
-this queue is defined in `libuthread/queue.h` and your code should be added into
-`libuthread/queue.c`.
-
-The constraint for this exercise is that all operations (apart from the iterate
-and delete operation) must be *O(1)*. This implies that you must choose the
-underlying data structure for your queue implementation carefully.
-
-### 1.1 Makefile
-
-Complete the file `libuthread/Makefile` in order to generate a *library archive*
-named `libuthread/libuthread.a`.
-
-This library archive must be the default target of your Makefile, because your
-Makefile is called from the root Makefile without any argument.
-
-Note that at first, only the file `libuthread/queue.c` should be included in
-your library. You will add the other C files as you start implementing them in
-order to expand the API provided by your library.
-
-### 1.2 Testing
-
-Add a new test program in the root directory (e.g. `test-queue.c`) which tests
-your queue implementation. It is important that your test program is
-comprehensive in order to ensure that your queue implementation is as resistant
-as possible. It will ensure that you don't encounter bugs when using your queue
-later on.
-
-A few tests can be to create queues, enqueue some items, make sure that these
-items are dequeued in the same order, delete some items, test the length of the
-queue, etc.
-
-For example, make sure to try your implementation doesn't crash when receiving
-NULL pointers as arguments:
-
-```C
-assert(queue_destroy(NULL) == -1);
-assert(queue_enqueue(NULL, NULL) == -1);
-```
-
-## Phase 2: thread API
-
-In this second phase, you must implement most of the thread management (some is
-provided to you for free). The interface to this thread API is defined in
-`libuthread/uthread.h` and your code should be added into
-`libuthread/uthread.c`.
-
-Note that the thread API is actually composed of two sets: a public API and a
-private API, as explained below.
-
-### Thread definition
-
-Threads are independent execution flows that run concurrently in the address
-space of a single process (and thus, share the same heap memory, open
-files, process identifier, etc.). Each thread has its own execution context,
-which mainly consists of:
-
-1. a state (running, ready, blocked, etc.)
-1. the set of CPU registers (for saving the thread upon descheduling and
-   restoring it later)
-1. a stack
+### queue_empty
 
-The goal of a thread library is to provide applications that want to use threads
-an interface (i.e. a set of library functions) that the application can use to
-create and start new threads, terminate threads, or manipulate threads in
-different ways.
-
-For example, the most well-known and wide-spread standard that defines the
-interface for threads on Unix-style operating systems is called *POSIX thread*
-(or `pthread`). The pthread API defines a set of functions, a subset of which we
-want to implement for this project. Of course, there are various ways in which
-the pthread API can be realized, and existing libraries have implemented pthread
-both in the OS kernel and in user mode. For this project, we aim to implement a
-few pthread functions at user level on Linux.
+Returns `true` if the size of the queue is 0.
 
-### Public API
+### queue_front
 
-The public API of the thread library defines the set of functions that
-applications and the threads they create can call in order to interact with the
-library.
+Returns the element in the front of the queue, otherwise returns `NULL`
 
-From the point of view of applications, threads are designated by a number of
-type `uthread_t`. Think of it as the equivalent of `pid_t` for Unix processes.
+### queue_create
 
-The first function an application has to call in order to initialize your
-library is `uthread_start()`. This function must perform three actions:
+Allocates memory for a queue and initializes struct property such as the front, back and size of queue.
 
-1. It registers the so-far single execution flow of the application as the
-   *idle* thread that the library can schedule
-1. It creates a new thread, the *initial thread*, as specified by the arguments
-   of the function
-1. The function finally execute an infinite loop which
-    1. When there are no more threads which are ready to run in the system, it
-       stops the idle loop and exits the program.
-    1. Or it simply yields to next available thread
+### queue_destroy
 
-Once the *initial thread* created, it can interact with the library to create
-new threads, exit, yield execution, etc.
+Performs a procedure that continuosly empties the queue until the queue is empty. We `free` the elements along this process. We integrate `queue_pop` in the process which adjusts the front pointer.
 
-For this step, we expect the library to be non-preemptive. Threads must call the
-function `uthread_yield()` in order to ask the library's scheduler to schedule
-the next available thread. In non-preemptive mode, a non-compliant thread that
-never yields can keep the processing resource for itself.
+### queue_enqueue
 
-### Private API
+This function allocates a new node and initializes the data for it that is past into the function. There are two cases to keep in mind: if the queue is empty, the front and back have to point to the new node and the next and previous point to null, otherwise we fit in the new node in the back of the queue and adjust pointers so that it is properly linked (double linked). Finally, the size is incremented.
 
-The private API of the thread library defines the set of functions that can only
-be accessed from the code of the library itself, and not by applications using
-the library.
+### queue_dequeue
 
-In order to deal with the creation and scheduling of threads, you first need a
-data structure that can store information about a single thread. This data
-structure will likely need to hold, at least, information mentioned above such
-as the state of the thread (its set of registers), information about its stack
-(e.g., a pointer to the thread's stack area), and information about the status
-of the thread (whether it is running, ready to run, or has exited).
+This functions removes an element from the queue. Here's how we implement this function.First we check to make sure the queue is not empty. We dereference the double voided data that is passed in to the function to equal to the dequeue element. This is returned back to the calling function that is utilized later. This function behaves just like `queue_pop`, but without the data that is passed.
 
-This data structure is often called a thread control block (*TCB*) and will be
-described by `struct uthread_tcb`.
+### queue_delete
 
-At this point, the functions defined in the private API could theoretically be
-only defined in `libuthread/uthread.c` and not exported to the rest of the
-library. But with the implementation of the semaphore API, semaphores will need
-to have access to these functions in order to manipulate the thread when
-necessary.
+Iterates through the double linked list to the passed data and if that data is found, the size is decremented and we return 0 to denote a successful delete.
 
-### Internal `context` API
+### queue_iterate 
 
-Some code located in `libuthread/context.c`, and which interface is defined in
-`libuthread/context.h`, is accessible for you to use. The four functions
-provided by this library allow you to:
+This iterates through the queue and applies the function pointer to each element in the queue. We also ensure that if the function pointer deletes the data member it still continues to iterate to the end of the queue. *As of now, we have not found any siginifcant use of this function.* After completing the project,we found that our implementation did not need this function,but we still defined its functionality and also tested it thoroughly. 
 
-- Allocate a stack when creating a new thread (and conversely, destroy a stack
-  when a thread is deleted)
-- Initialize the stack and the execution context of the new thread so that it
-  will run the specified function with the specified argument
-- Switch between two execution contexts
+### queue_length
 
-### Testing
-
-Two applications can help test this phase:
-- `test1`: creates a single thread that displays "hello world"
-- `test2`: creates three threads in cascade and test the yield feature of the
-  scheduler
+Returns the length of the queue or returns `NULL` if the queue itself is invalid.
 
-## Phase 3: semaphore API
+### queue_iterate_db
 
-Semaphores are a way to control the access to common resources by multiple
-threads.
+This is a helper function that was neccessary in our own exhaustive testing of the Queue API. We made sure it is discluded from the queue header file.
 
-Internally, a semaphore has a certain count, that represent the number of
-threads able to share a common resource at the same time. This count is
-determined when initializing the semaphore for the first time.
 
-Threads can then ask to grab a resource (known as "down" or "P" operation) or
-release a resource (known as "up" or "V" operation).
+# Phase 2: Thread API
 
-Trying to grab a resource when the count of a semaphore is down to 0 adds the
-requesting thread to the list of threads that are waiting for this resource. The
-thread is put in a blocked state and shouldn't be eligible to scheduling.
+This is the main user thread library that manages the scheduling of threads of any context execution. Along with scheduling, it handles the starting of an `idle` thread which acts as the entry point of a process. 
 
-When a thread releases a semaphore which count was 0, it checks whether some
-other threads were currently waiting on it. In such case, the first thread of
-the waiting list can be unblocked and run.
 
-As you can now understand, your semaphore implementation will make use of the
-functions defined in the private thread API.
+## Functionality
 
-The interface of the semaphore API is defined in `libuthread/semaphore.h` and
-your implementation should go in `libuthread/semaphore.c`.
+### uthread_start
 
-### Testing
+This function starts off by initializing a single queue that acts as a container for all the threads within a process. We maintain a strut called `uthread_tcb` (which is the Thread Control Block) that contains a pointer to the context of the thread, its own private stack, state of execution and an integer identifier. We included these four attributes to the TCB because it allowed for an intuitive interface of an individual thread; for example, the state of thread is an `enum` typedef that contains the states `RUNNING`, `READY`, `BLOCKED`, `TERMINATED`. The idle thread is identified by the integer 0, and every preceeding thread follows an n+1 id that starts from the idle thread.
 
-Three testing programs are available in order to test your semaphore
-implementation:
+We also maintain a global pointer to the current thread in order to easily interface through each function in the Thread API. 
 
-- `test3`: simple test with two threads and two semaphores
-- `test4`: producer/consumer exchanging data in a buffer
-- `test5`: prime sieve implemented with a growing pipeline of threads (this test
-  really stresses both the thread management and the semaphore part of the
-  library)
+The idle thread bootstraps the initial thread and continues to yield until there are no more threads in the queue. This is handled by using a while loop which checks if the queue is empty and continuosly calls our `yield` function.
 
-## Phase 4: preemption
 
-Up to this point, uncooperative threads could keep the processing resource for
-themselves if they never called `uthread_yield()` or never blocked on a
-semaphore.
+### uthread_create
 
-In order to avoid such dangerous behaviour, you will add preemption to your
-library. The interface of the preemption API is defined in
-`libuthread/preempt.h` and your code should be added to `libuthread/preempt.c`.
+This function handles the creation of threads by enqueueing each new thread.
+We begin by allocatin memory and initizlizing the proper atrributes (state, stack, etc) for a thread and its context. Finally the thread gets enqueued. Every thread should have its own context so it can resume if and when it gets yielded.
 
-The function that sets up preemption, `preempt_start()`, is already provided for
-you to call when you start the thread library. This function configures a timer
-which will fire an alarm (through a `SIGVTALRM` signal) a hundred times per
-second.
+### uthread_yield
 
-Internally, you must provide a timer handler which will force the currently
-running thread to yield, so that another thread can be scheduled instead.
+This function yields the currently running thread to the next `READY` thread.
+We obtain the currently running thread. If its previous state was `RUNNING` we set it to `READY` since it hasn't finished its execution and dequeue the front of our queue. This return a pointer to the front of the queue; we ensure that every thread in the queue is in `READY` state before it is resumed to `RUNNING` state. If the thread hasn't finished its execution, then its re-enqueued. The most critical part is when we context switch, which changes context to the next thread in the queue. Finally we check if the thread is in a `TERMINATED` state in which case we free its TCB.
 
-The other functions that you must implement deal with:
-- enabling/disabling preemption
-- saving/restoring preemption (saving means that the current preemption state
-  must be saved and preemption must be disabled; restoring that the previously
-  saved preemption state must be restored)
-- checking if preemption is currently disabled
+### uthread_exit
 
-### About disabling preemption...
+When a thread exits, its state is set to `TERMINATED` and we free the context and stack, then yield to the next thread.
 
-Preemption is a great way to enable reliable and fair scheduling of threads, but
-it comes with some pitfalls.
 
-For example, if the library is accessing sensitive data structures in order to
-add a new thread to the system and gets preempted in the middle, scheduling
-another thread of execution that might also manipulate the same data structures
-can cause the internal share state of the library to become inconsistent.
 
-Therefore, when manipulating shared data structures, preemption should probably
-be temporarily disabled so that such manipulations are guaranteed to be
-performed *atomically*.
+# Phase 3: semaphore API
 
-However, avoid disabling preemption each time a thread calls the library. Try to
-disable preemption only when necessary. For example, the creation of a new
-thread can be separated between sensitive steps that need to be done atomically
-and non-sensitive steps that can safely be interrupted and resumed later without
-affecting the consistency of the shared data structures.
+We create a semaphore struct with a count and a queue. The count represents the number of threads able to share a common resource at the same time and the queue handles blocked threads that are in the wait list for the next resource.
 
-A good way to figure out whether preemption should be temporarily disabled while
-performing a sequence of operations is to imagine what would happen if this
-sequence was interrupted in the middle and another thread scheduled.
+## Functionality
 
-As a hint, in the reference implementation, the preempt API is used in the
-following files:
+### sem_create
 
-```
-$ grep -l preempt_* libuthread/*.c | uniq
-libuthread/preempt.c
-libuthread/semaphore.c
-libuthread/uthread.c
-libuthread/context.c
-```
+This constructs a new semaphore by initializing a new queue and passed in count.
 
-# Deliverable
+### sem_destroy
 
-## Constraints
+All elements in the queue are delisted (using the `queue_destroy` function) and the memory for the semaphore is freed.
 
-Your library must be written in C, be compiled with GCC and only use the
-standard functions provided by the GNU C Library. It cannot be linked to any
-other external libraries.
+### uthread_block
 
-Your source code should follow the relevant parts of the [Linux kernel coding
-style](https://www.kernel.org/doc/html/latest/process/coding-style.html) and be
-properly commented.
+The state of the current thread is changed to `BLOCKED` and yields to the next thread.
 
-## Content
+### uthread_unblock 
 
-Your submission should contain, besides your source code, the following files:
+We `assert` that the thread hasn't been previosly in the `BLOCKED` state, we changed its state to `READY` and enqueue it to the "ready" queue in `thread.c`
 
-- `AUTHORS`: full name, student ID and email of each partner, one entry per
-  line formatted in CSV (fields are separated with commas). For example:
+### sem_up
 
-    ```
-    $ cat AUTHORS
-    Jean Dupont,00010001,jdupont@ucdavis.edu
-    Marc Durand,00010002,mdurand@ucdavis.edu
-    ```
+A queue with a semaphore waitlist that has at least one or more threads in it implies that the when "freeing" a resource the front of the queue should be unblocked. Otherwise, a resource is freed by incrementing the count in the semaphore.
 
-- `REPORT.md`: a
-  [markdown-formatted](https://github.com/adam-p/markdown-here/wiki/Markdown-Cheatsheet)
-  file containing a description of your submission.
+### sem_down 
 
-    This file should explain your design choices, how you tested your project,
-    the sources that you may have used to complete this project, etc. and any
-    other relevant information.
+When requesting to obtain resource we check to make sure that there is actually a resource available and if so, the resource is "consumed". Otherwise, its enlisted to the semaphore queue as a blocked thread.
 
-## Git
 
-Your submission must be under the shape of a Git bundle. In your git repository,
-type in the following command (your work must be in the branch `master`):
+# Phase 4: Preemption
 
-```
-$ git bundle create uthread.bundle master
-```
+In the preemption phase of our project, we implement the necessary functions to force a thread into yeilding after having been running for some amount of time. Each thread is equally assigned a fixed time frame for execution, so that no thread in particular hogs CPU time. In order to accomplish this, we use syscalls from the `Signal.h` library to perform the needed operations. We also use timer interrupts to keep track of the running time for each thread and interrupt the processor once a thread has exceeded its max allowed time.
 
-It should create the file `uthread.bundle` that you will submit via `handin`.
+## Functionality
 
-You can make sure that your bundle has properly been packaged by extracting it
-in another directory and verifying the log:
+### preempt_save
 
-```
-$ cd /path/to/tmp/dir
-$ git clone /path/to/uthread.bundle -b master uthread
-$ cd uthread
-$ git log
-...
-```
+This function maintains the masking of the current thread. This means it saves the signals to be blocked in the provided pointer of type `sigset_t`. After that we disable preemtion explained below. After completing of all the phases, we did not use this function, because our implementation does not require to save the current mask signal, because we only care about one signal.
 
-## Handin
+### preempt_restore
 
-Your Git bundle, as created above, is to be submitted with `handin` from one of
-the CSIF computers:
+This function restores the given mask signals by copying the mask contents of its pointer argument to the currently running mask signals object. 
 
-```
-$ handin cs150 p2 uthread.bundle
-Submitting uthread.bundle... ok
-$
-```
+### preempt_enable
 
-You can verify that the bundle has been properly submitted:
+This functions enables the `SIGVTALRM` signal for the currently running mask. The `SIGVTALRM` is responsible for enabling the timer interrupt signal. We performe this task creating an empty `sigset_t` variable, and adding the `SIGVTALRM` signal to the variable. We then call the syscall `sigprocmask` with the `SIG_UNBLOCK` parameter to enable the `SIGVTALRM` signal, which enables the timer for the interrupt.
 
-```
-$ handin cs150 p2
-The following input files have been received:
-...
-$
-```
+### preempt_disable
 
-# Academic integrity
+Disable blocks the `SIGVTALRM` which stops the timer. It does so by creating a new `sigset_t` variable and adding the signal to it. When we call `sigprocmask` with the the `SIG_BLOCK` parameter, it releases that signal from the mask. 
 
-You are expected to write this project from scratch, thus avoiding to use any
-existing source code available on the Internet. You must specify in your
-`README.md` file any sources of code that you or your partner have viewed to
-help you complete this project. All class projects will be submitted to MOSS to
-determine if pairs of students have excessively collaborated with other pairs.
-Excessive collaboration, or failure to list external code sources will result in
-the matter being transferred to Student Judicial Affairs.
+### preempt_disabled
+
+This function checks to see if the signal responsible for the timer alarm `SIGVTALRM` is masked on or off, and returns true or false respectively. Again, as we did in most other preemption functions, we use `sigsetops` syscalls to check for the status of the signal.
+
+### timer_handler
+
+This is the function handler for the timer interrupt. This function gets called whenever the down counter reaches zero. This function is responsible for forcing currently running thread to yield. We call the function `uthread_yield` to force the currently running thread to yield to the next thread.
+
+### preempt_start
+
+This function was provided to us by professor Joel Porquet. Basically, this functions sets up the timer interrupt. In setting up the timer interrupt, a handler function is registered to the timer interrupt. The counter is also initialized to a specific time and is set to run periodically over and over again. We did not modify this function. 
+
+
+## Design Choices
+
+There were a few section in the code that we considered to be critical and required the usage of the `preemption` functions. 
+
+* Malloc:
+	* We recognized that malloc is not an atomic function and was crucial that there are no interrupts while it allocates new space.
+* Queue: 
+	* Queue operations are not atomic, so it was crucial that we disabled the timer since pointers were being shifted around. If the timer had been enabled, an interrupt would cause a mess while shifting pointers.
+* Context Switching:
+	* Consider this example: If you diable the timer before a context switch and enter a new thread, this new thread could potentially run an infinite loop and never exit (since the timer is disabled). For this reason, our program ensures that `preempt_enable` is turned on before context switching.
+
+
+
+## References
+ * https://www.tutorialspoint.com/data_structures_algorithms/queue_program_in_c.htm
+ * http://stackoverflow.com/questions/25261/set-and-oldset-in-sigprocmask 
+ * https://support.sas.com/documentation/onlinedoc/sasc/doc700/html/lr1/zlocking.htm
+ * http://man7.org/linux/man-pages/man2/sigprocmask.2.html
+ * http://pubs.opengroup.org/onlinepubs/009695399/functions/sigaction.html
+ * http://www.cs.cornell.edu/courses/cs4410/2014fa/CS4411/projects/project1/project1.pdf
 

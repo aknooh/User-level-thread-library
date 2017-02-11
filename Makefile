@@ -1,5 +1,6 @@
 # Target programs
-programs := test1 test2 test3 test4 test5 premptest1 premptest2
+programs := test1 test2 test3 test4 test5 
+# premptest1 premptest2
 
 # User-level thread library
 UTHREADLIB=libuthread
